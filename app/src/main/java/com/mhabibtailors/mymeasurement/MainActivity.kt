@@ -191,17 +191,60 @@ class MainActivity : Activity() {
     }
 
     private fun showTailorHome() {
-        val c = root("Hello, $currentName", currentShop)
-        val card = TextView(this).apply {
-            text = "TAILOR ID  $currentTailorId\nKeep this ID safe for customer searches."
-            textSize = 16f; setTextColor(DEEP_BLUE); setPadding(dp(16), dp(16), dp(16), dp(16))
-            background = rounded(PALE_BLUE, 16)
+        val c = root("Tailor Dashboard", "Welcome back, $currentName")
+        val idCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(18), dp(17), dp(18), dp(17))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(0xFF123F83.toInt(), 0xFF2168B7.toInt())
+            ).apply { cornerRadius = dp(20).toFloat() }
+            elevation = dp(3).toFloat()
         }
-        c.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
-        addButton(c, "Add Measurement", { showMeasurementForm() })
-        addButton(c, "All Measurements", { showMeasurements() }, false)
-        addButton(c, "Search Measurements", { showSearch() }, false)
-        addButton(c, "Profile", { showProfile() }, false)
+        idCard.addView(TextView(this).apply {
+            text = currentShop.uppercase(Locale.getDefault()); textSize = 12f
+            letterSpacing = 0.12f; setTextColor(0xFFD5E6FF.toInt())
+            typeface = Typeface.DEFAULT_BOLD
+        })
+        idCard.addView(TextView(this).apply {
+            text = currentName; textSize = 21f; setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
+        idCard.addView(TextView(this).apply {
+            text = "TAILOR ID  $currentTailorId"; textSize = 14f
+            setTextColor(Color.WHITE); typeface = Typeface.DEFAULT_BOLD
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        c.addView(idCard, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
+
+        val count = db.measurementCount(currentUserId)
+        val stats = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        listOf("SAVED MEASUREMENTS" to count.toString(), "ACCOUNT" to "ACTIVE").forEach { item ->
+            val tile = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(14), dp(13), dp(14), dp(13))
+                background = rounded(Color.WHITE, 16, 0xFFE0E8F2.toInt())
+            }
+            tile.addView(TextView(this).apply {
+                text = item.second; textSize = 21f; setTextColor(DEEP_BLUE)
+                typeface = Typeface.DEFAULT_BOLD
+            })
+            tile.addView(TextView(this).apply {
+                text = item.first; textSize = 10f; letterSpacing = 0.05f
+                setTextColor(0xFF64748B.toInt())
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
+            stats.addView(tile, LinearLayout.LayoutParams(0, -2, 1f).apply {
+                if (item.first == "ACCOUNT") leftMargin = dp(9)
+            })
+        }
+        c.addView(stats, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(17) })
+        c.addView(TextView(this).apply {
+            text = "QUICK ACTIONS"; textSize = 12f; letterSpacing = 0.12f
+            setTextColor(0xFF64748B.toInt()); typeface = Typeface.DEFAULT_BOLD
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(3) })
+        addButton(c, "＋  Add New Measurement", { showMeasurementForm() })
+        addButton(c, "▤  All Measurements", { showMeasurements() }, false)
+        addButton(c, "⌕  Search Measurements", { showSearch() }, false)
+        addButton(c, "◉  Profile & Account", { showProfile() }, false)
         addButton(c, "Log Out", { currentUserId = -1; showRoleChoice() }, false)
     }
 
@@ -345,6 +388,14 @@ private class AppDb(context: Context) : SQLiteOpenHelper(context, "my_measuremen
             put("order_date", order); put("return_date", ret); put("data", data); put("notes", notes)
         }
         return try { writableDatabase.insertOrThrow("measurements", null, cv); serial } catch (_: Exception) { null }
+    }
+
+    fun measurementCount(userId: Long): Int {
+        val c = readableDatabase.rawQuery(
+            "SELECT COUNT(*) FROM measurements WHERE tailor_user_id=?",
+            arrayOf(userId.toString())
+        )
+        c.use { return if (it.moveToFirst()) it.getInt(0) else 0 }
     }
 
     fun measurementsForTailor(userId: Long): List<MeasurementInfo> {
