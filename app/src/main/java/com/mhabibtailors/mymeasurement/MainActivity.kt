@@ -250,12 +250,15 @@ class MainActivity : Activity() {
             setTextColor(0xFF64748B.toInt()); typeface = Typeface.DEFAULT_BOLD
         }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(3) })
         addButton(c, "＋  Add New Measurement", { showMeasurementForm() })
+        addButton(c, "⌕  Search Measurements", { showSearch() }, false)
         addButton(c, "▤  All Measurements", { showMeasurements(false) }, false)
         addButton(c, "◷  Draft Measurements", { showMeasurements(true) }, false)
         addButton(c, "⌕  Search Measurements", { showSearch() }, false)
         addButton(c, "◉  Profile & Account", { showProfile() }, false)
         addButton(c, "＋  Calculator", { showCalculator() }, false)
         addButton(c, "▦  QR Identity", { showQrIdentity() }, false)
+        addButton(c, "✉  Chat & Inbox", { showChat() }, false)
+        addButton(c, "🌐  Language / زبان", { showLanguage() }, false)
         addButton(c, "Log Out", { currentUserId = -1; showRoleChoice() }, false)
     }
 
@@ -415,6 +418,21 @@ class MainActivity : Activity() {
             toast("Could not create QR identity: ${e.message}")
         }
         addButton(c, "Back to Dashboard", { showTailorHome() }, false)
+    }
+
+
+    private fun showChat() {
+        val c = root("Chat & Inbox", "Customer and tailor communication")
+        c.addView(TextView(this).apply { text = "Inbox interface. Secure cloud messaging backend is not connected yet, so messages cannot be sent or received."; textSize = 15f; setTextColor(INK); setPadding(dp(16), dp(18), dp(16), dp(18)); background = rounded(Color.WHITE, 16, 0xFFDCE5F1.toInt()) })
+        addButton(c, "Back", { showTailorHome() }, false)
+    }
+
+    private fun showLanguage() {
+        val p = getSharedPreferences("my_measurement_settings", MODE_PRIVATE)
+        val c = root("Language / زبان", "Choose your preferred language")
+        addButton(c, "English", { p.edit().putString("language", "en").apply(); toast("English selected. Full translation is not complete yet."); showTailorHome() })
+        addButton(c, "اردو", { p.edit().putString("language", "ur").apply(); toast("اردو منتخب ہوگئی۔ مکمل ترجمہ ابھی باقی ہے۔"); showTailorHome() }, false)
+        addButton(c, "Back", { showTailorHome() }, false)
     }
 
     private fun showProfile() {
