@@ -49,26 +49,46 @@ class MainActivity : Activity() {
         }
 
     private fun root(title: String, subtitle: String? = null): LinearLayout {
-        val scroll = ScrollView(this).apply { setBackgroundColor(Color.WHITE) }
+        val scroll = ScrollView(this).apply { setBackgroundColor(0xFFF4F7FC.toInt()) }
         val col = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(22), dp(18), dp(22), dp(28))
+            setPadding(dp(18), dp(16), dp(18), dp(30))
+        }
+        val hero = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(17), dp(15), dp(17), dp(15))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(0xFF092B60.toInt(), 0xFF174F9B.toInt())
+            ).apply { cornerRadius = dp(22).toFloat() }
+            elevation = dp(4).toFloat()
         }
         val logo = ImageView(this).apply {
             setImageResource(R.drawable.my_measurement_logo)
-            scaleType = ImageView.ScaleType.FIT_CENTER
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            background = rounded(Color.WHITE, 16)
+            clipToOutline = true
+            setPadding(dp(5), dp(5), dp(5), dp(5))
         }
-        col.addView(logo, LinearLayout.LayoutParams(dp(112), dp(112)).apply { gravity = Gravity.CENTER })
-        val heading = TextView(this).apply {
-            text = title; textSize = 25f; setTextColor(DEEP_BLUE)
-            typeface = Typeface.create("sans-serif", Typeface.BOLD); gravity = Gravity.CENTER
+        hero.addView(logo, LinearLayout.LayoutParams(dp(70), dp(70)))
+        val brand = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), 0, 0, 0)
         }
-        col.addView(heading, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
-        if (subtitle != null) {
-            col.addView(TextView(this).apply {
-                text = subtitle; textSize = 14f; setTextColor(0xFF64748B.toInt()); gravity = Gravity.CENTER
-            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6); bottomMargin = dp(18) })
-        } else col.addView(Space(this), LinearLayout.LayoutParams(1, dp(18)))
+        brand.addView(TextView(this).apply {
+            text = "MY MEASUREMENT"; textSize = 12f; letterSpacing = 0.16f
+            setTextColor(0xFFBFD7FF.toInt()); typeface = Typeface.DEFAULT_BOLD
+        })
+        brand.addView(TextView(this).apply {
+            text = title; textSize = 22f; setTextColor(Color.WHITE)
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
+        if (!subtitle.isNullOrBlank()) brand.addView(TextView(this).apply {
+            text = subtitle; textSize = 12f; setTextColor(0xFFDCE8FA.toInt())
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
+        hero.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
+        col.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(20) })
         scroll.addView(col)
         setContentView(scroll)
         page = col
@@ -84,15 +104,18 @@ class MainActivity : Activity() {
     private fun button(text: String, action: () -> Unit, primary: Boolean = true): Button =
         Button(this).apply {
             this.text = text; isAllCaps = false; textSize = 15f
-            setTextColor(if (primary) Color.WHITE else BLUE)
-            background = rounded(if (primary) BLUE else PALE_BLUE, 14, if (primary) 0 else BLUE)
-            setPadding(dp(10), dp(7), dp(10), dp(7))
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(if (primary) Color.WHITE else DEEP_BLUE)
+            background = rounded(if (primary) BLUE else Color.WHITE, 16, if (primary) 0 else 0xFFDCE5F1.toInt())
+            elevation = if (primary) dp(2).toFloat() else 0f
+            setPadding(dp(14), dp(8), dp(14), dp(8))
+            minHeight = dp(54)
             setOnClickListener { action() }
         }
 
     private fun addButton(col: LinearLayout, text: String, action: () -> Unit, primary: Boolean = true) {
-        col.addView(button(text, action, primary), LinearLayout.LayoutParams(-1, dp(52)).apply {
-            topMargin = dp(9)
+        col.addView(button(text, action, primary), LinearLayout.LayoutParams(-1, dp(56)).apply {
+            topMargin = dp(10)
         })
     }
 
