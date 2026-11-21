@@ -3,7 +3,7 @@ name: Build My Measurement APK and AAB
 on:
   workflow_dispatch:
   push:
-    branches: [main, professional-v2]
+    branches: [main, professional-v2, premium-v3]
 
 jobs:
   build:
