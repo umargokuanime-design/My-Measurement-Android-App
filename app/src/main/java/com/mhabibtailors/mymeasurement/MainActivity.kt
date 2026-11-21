@@ -217,8 +217,9 @@ class MainActivity : Activity() {
         c.addView(idCard, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
 
         val count = db.measurementCount(currentUserId)
+        val drafts = db.draftCount(currentUserId)
         val stats = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        listOf("SAVED MEASUREMENTS" to count.toString(), "ACCOUNT" to "ACTIVE").forEach { item ->
+        listOf("SAVED MEASUREMENTS" to count.toString(), "DRAFTS" to drafts.toString()).forEach { item ->
             val tile = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(14), dp(13), dp(14), dp(13))
@@ -242,7 +243,8 @@ class MainActivity : Activity() {
             setTextColor(0xFF64748B.toInt()); typeface = Typeface.DEFAULT_BOLD
         }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(3) })
         addButton(c, "＋  Add New Measurement", { showMeasurementForm() })
-        addButton(c, "▤  All Measurements", { showMeasurements() }, false)
+        addButton(c, "▤  All Measurements", { showMeasurements(false) }, false)
+        addButton(c, "◷  Draft Measurements", { showMeasurements(true) }, false)
         addButton(c, "⌕  Search Measurements", { showSearch() }, false)
         addButton(c, "◉  Profile & Account", { showProfile() }, false)
         addButton(c, "Log Out", { currentUserId = -1; showRoleChoice() }, false)
@@ -250,7 +252,7 @@ class MainActivity : Activity() {
 
     private fun showMeasurementForm() {
         clearFields()
-        val c = root("Add Measurement", "A new serial number is generated automatically")
+        val c = root("Add Measurement", "Save a finished record or keep working on a draft")
         input(c, "customer", "Customer Name")
         input(c, "orderDate", "Order Date (YYYY-MM-DD)")
         input(c, "returnDate", "Return Date (YYYY-MM-DD)")
@@ -260,28 +262,37 @@ class MainActivity : Activity() {
             "kurta" to "Shirt / Kurta Length", "trouser" to "Trouser / Shalwar Length")
         keys.forEach { (key, title) -> input(c, key, title) }
         input(c, "notes", "Notes")
-        addButton(c, "Save Measurement", {
+        fun saveRecord(status: String) {
             val customer = value("customer")
-            if (customer.isBlank()) { toast("Customer name is required."); return@addButton }
+            if (customer.isBlank()) { toast("Customer name is required."); return }
             val map = keys.associate { it.first to value(it.first) }
-            val serial = db.addMeasurement(currentUserId, customer, value("orderDate"), value("returnDate"), map, value("notes"))
-            if (serial != null) { toast("Measurement saved. Serial: $serial"); showTailorHome() }
-            else toast("Could not save measurement.")
-        })
+            val serial = db.addMeasurement(currentUserId, customer, value("orderDate"), value("returnDate"), map, value("notes"), status)
+            if (serial != null) {
+                toast(if (status == "SAVED") "Measurement saved. Serial: $serial" else "Draft saved. Serial: $serial")
+                showTailorHome()
+            } else toast("Could not save measurement.")
+        }
+        addButton(c, "Save Measurement", { saveRecord("SAVED") })
+        addButton(c, "Save as Draft", { saveRecord("DRAFT") }, false)
         addButton(c, "Cancel", { showTailorHome() }, false)
     }
 
-    private fun showMeasurements() {
-        val c = root("All Measurements", currentShop)
-        val records = db.measurementsForTailor(currentUserId)
+    private fun showMeasurements(draftsOnly: Boolean = false) {
+        val title = if (draftsOnly) "Draft Measurements" else "Saved Measurements"
+        val c = root(title, currentShop)
+        val records = db.measurementsForTailor(currentUserId, if (draftsOnly) "DRAFT" else "SAVED")
         if (records.isEmpty()) {
-            c.addView(TextView(this).apply { text = "No measurements saved yet."; textSize = 16f; setTextColor(INK) })
+            c.addView(TextView(this).apply {
+                text = if (draftsOnly) "No drafts yet." else "No saved measurements yet."
+                textSize = 15f; setTextColor(0xFF64748B.toInt()); setPadding(0, dp(12), 0, dp(12))
+            })
         } else records.forEach { m ->
             val card = TextView(this).apply {
-                text = "Serial: ${m.serial}\nCustomer: ${m.customer}\nOrder: ${m.orderDate.ifBlank { "—" }}   Return: ${m.returnDate.ifBlank { "—" }}\n${m.summary}"
-                textSize = 14f; setTextColor(INK); setPadding(dp(14), dp(13), dp(14), dp(13)); background = rounded(PALE_BLUE, 14)
+                text = "${m.customer}\nSerial: ${m.serial}   •   ${m.status}\nOrder: ${m.orderDate.ifBlank { "—" }}   Return: ${m.returnDate.ifBlank { "—" }}\n${m.summary}"
+                textSize = 14f; setTextColor(INK); setPadding(dp(15), dp(14), dp(15), dp(14))
+                background = rounded(Color.WHITE, 16, 0xFFE0E8F2.toInt())
             }
-            c.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(9) })
+            c.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         }
         addButton(c, "Back to Dashboard", { showTailorHome() }, false)
     }
@@ -329,14 +340,16 @@ class MainActivity : Activity() {
 }
 
 private data class UserInfo(val id: Long, val name: String, val shop: String, val tailorId: String)
-private data class MeasurementInfo(val serial: String, val customer: String, val shop: String, val tailorId: String, val orderDate: String, val returnDate: String, val summary: String)
+private data class MeasurementInfo(val serial: String, val customer: String, val shop: String, val tailorId: String, val orderDate: String, val returnDate: String, val summary: String, val status: String)
 
-private class AppDb(context: Context) : SQLiteOpenHelper(context, "my_measurement.db", null, 1) {
+private class AppDb(context: Context) : SQLiteOpenHelper(context, "my_measurement.db", null, 2) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("""CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT, role TEXT NOT NULL, name TEXT NOT NULL COLLATE NOCASE, shop TEXT NOT NULL DEFAULT '', tailor_id TEXT UNIQUE, salt BLOB NOT NULL, pass_hash BLOB NOT NULL, UNIQUE(role,name))""")
-        db.execSQL("""CREATE TABLE measurements(id INTEGER PRIMARY KEY AUTOINCREMENT, tailor_user_id INTEGER NOT NULL, serial TEXT NOT NULL, customer TEXT NOT NULL COLLATE NOCASE, order_date TEXT, return_date TEXT, data TEXT NOT NULL, notes TEXT, UNIQUE(tailor_user_id,serial), FOREIGN KEY(tailor_user_id) REFERENCES users(id))""")
+        db.execSQL("""CREATE TABLE measurements(id INTEGER PRIMARY KEY AUTOINCREMENT, tailor_user_id INTEGER NOT NULL, serial TEXT NOT NULL, customer TEXT NOT NULL COLLATE NOCASE, order_date TEXT, return_date TEXT, data TEXT NOT NULL, notes TEXT, status TEXT NOT NULL DEFAULT 'SAVED', UNIQUE(tailor_user_id,serial), FOREIGN KEY(tailor_user_id) REFERENCES users(id))""")
     }
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) { /* Future upgrades must use migrations; never drop user data. */ }
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        if (oldVersion < 2) db.execSQL("ALTER TABLE measurements ADD COLUMN status TEXT NOT NULL DEFAULT 'SAVED'")
+    }
 
     private fun hash(password: String, salt: ByteArray): ByteArray {
         val spec = PBEKeySpec(password.toCharArray(), salt, 120_000, 256)
@@ -378,14 +391,14 @@ private class AppDb(context: Context) : SQLiteOpenHelper(context, "my_measuremen
         c.use { return if (it.moveToFirst() && !it.isNull(0)) it.getString(0) else "" }
     }
 
-    fun addMeasurement(userId: Long, customer: String, order: String, ret: String, values: Map<String,String>, notes: String): String? {
+    fun addMeasurement(userId: Long, customer: String, order: String, ret: String, values: Map<String,String>, notes: String, status: String): String? {
         val cur = readableDatabase.rawQuery("SELECT COALESCE(MAX(CAST(serial AS INTEGER)),0)+1 FROM measurements WHERE tailor_user_id=?", arrayOf(userId.toString()))
         val next = cur.use { if (it.moveToFirst()) it.getInt(0) else 1 }
         val serial = String.format(Locale.US, "%04d", next)
         val data = values.entries.joinToString("\n") { "${it.key}: ${it.value}" }
         val cv = ContentValues().apply {
             put("tailor_user_id", userId); put("serial", serial); put("customer", customer)
-            put("order_date", order); put("return_date", ret); put("data", data); put("notes", notes)
+            put("order_date", order); put("return_date", ret); put("data", data); put("notes", notes); put("status", status)
         }
         return try { writableDatabase.insertOrThrow("measurements", null, cv); serial } catch (_: Exception) { null }
     }
@@ -398,10 +411,15 @@ private class AppDb(context: Context) : SQLiteOpenHelper(context, "my_measuremen
         c.use { return if (it.moveToFirst()) it.getInt(0) else 0 }
     }
 
-    fun measurementsForTailor(userId: Long): List<MeasurementInfo> {
+    fun draftCount(userId: Long): Int {
+        val c = readableDatabase.rawQuery("SELECT COUNT(*) FROM measurements WHERE tailor_user_id=? AND status='DRAFT'", arrayOf(userId.toString()))
+        c.use { return if (it.moveToFirst()) it.getInt(0) else 0 }
+    }
+
+    fun measurementsForTailor(userId: Long, status: String): List<MeasurementInfo> {
         val out = mutableListOf<MeasurementInfo>()
-        val c = readableDatabase.rawQuery("SELECT m.serial,m.customer,u.shop,u.tailor_id,m.order_date,m.return_date,m.data,m.notes FROM measurements m JOIN users u ON u.id=m.tailor_user_id WHERE m.tailor_user_id=? ORDER BY m.id DESC", arrayOf(userId.toString()))
-        c.use { while (it.moveToNext()) out.add(MeasurementInfo(it.getString(0), it.getString(1), it.getString(2), if(it.isNull(3)) "" else it.getString(3), it.getString(4) ?: "", it.getString(5) ?: "", it.getString(6) + if ((it.getString(7) ?: "").isNotBlank()) "\nNotes: ${it.getString(7)}" else "")) }
+        val c = readableDatabase.rawQuery("SELECT m.serial,m.customer,u.shop,u.tailor_id,m.order_date,m.return_date,m.data,m.notes,m.status FROM measurements m JOIN users u ON u.id=m.tailor_user_id WHERE m.tailor_user_id=? AND m.status=? ORDER BY m.id DESC", arrayOf(userId.toString(), status))
+        c.use { while (it.moveToNext()) out.add(MeasurementInfo(it.getString(0), it.getString(1), it.getString(2), if(it.isNull(3)) "" else it.getString(3), it.getString(4) ?: "", it.getString(5) ?: "", it.getString(6) + if ((it.getString(7) ?: "").isNotBlank()) "\nNotes: ${it.getString(7)}" else "", it.getString(8))) }
         return out
     }
 
