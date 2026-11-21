@@ -18,6 +18,7 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import java.security.SecureRandom
 import java.util.Locale
+import java.math.BigDecimal
 
 private const val BLUE = 0xFF123F83.toInt()
 private const val DEEP_BLUE = 0xFF082653.toInt()
@@ -364,7 +365,7 @@ class MainActivity : Activity() {
                     2 -> a * b
                     else -> a / b
                 }
-                result.text = "Result: ${String.format(Locale.US, "%.3f", answer).trimEnd('0').trimEnd('.')}"
+                result.text = "Result: ${BigDecimal.valueOf(answer).stripTrailingZeros().toPlainString()}"
             }
         })
         addButton(c, "Back to Dashboard", {
@@ -485,7 +486,7 @@ private class AppDb(context: Context) : SQLiteOpenHelper(context, "my_measuremen
         if (customer.isBlank() || serial.isBlank() || shop.isBlank() || tailorId.isBlank()) return null
         val c = readableDatabase.rawQuery("""SELECT m.serial,m.customer,u.shop,u.tailor_id,m.order_date,m.return_date,m.data,m.notes
             FROM measurements m JOIN users u ON u.id=m.tailor_user_id
-            WHERE m.customer=? COLLATE NOCASE AND m.serial=? AND u.shop=? COLLATE NOCASE AND u.tailor_id=?""",
+            WHERE m.customer=? COLLATE NOCASE AND m.serial=? AND u.shop=? COLLATE NOCASE AND u.tailor_id=? AND m.status='SAVED'""",
             arrayOf(customer, serial, shop, tailorId))
         c.use {
             if (!it.moveToFirst()) return null
