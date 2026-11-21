@@ -1,4 +1,7 @@
-# My Measurement — Android starter project
+# My Measurement — Professional V2
+
+Professional V2 is being developed on the `professional-v2` branch. The first UI pass adds a branded blue gradient header, cleaner form controls, and a tailor dashboard with shop identity and a live local measurement count.
+
 
 This is the first development phase of My Measurement. It includes the supplied logo, blue/gold styling, Tailor/Customer role selection, local registration/login, salted PBKDF2 password hashes, unique-per-local-database Tailor IDs, local SQLite storage, measurement entry, auto serial numbers, tailor measurement list, and four-field local search.
 
@@ -19,3 +22,21 @@ This is the first development phase of My Measurement. It includes the supplied 
 
 ## Package
 `com.mhabibtailors.mymeasurement`
+
+## Professional V2 development status
+
+### Implemented in this branch
+- Branded app header using the repository logo.
+- Refined blue-and-white visual shell and form controls.
+- Tailor dashboard with shop name, Tailor ID, local saved-measurement count, and quick actions.
+- Existing local registration/login, PBKDF2 password hashing, SQLite measurements, and local four-field search are retained.
+
+### Still to build before production
+- Draft measurements and customer-side saved measurement inbox.
+- QR generation/scanning and authenticated measurement transfer.
+- Cloud authentication/database so tailor IDs and records work across devices.
+- Tailor/customer messaging and image sharing.
+- English/Urdu localization and in-app calculator.
+- Release signing and Play Store-ready AAB verification.
+
+The current app remains a local starter and is not yet production-ready for real customer records. APK/AAB CI builds are configured for this branch; the release AAB currently has no configured upload signing key.
