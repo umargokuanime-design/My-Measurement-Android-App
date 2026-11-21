@@ -71,10 +71,10 @@ class MainActivity : Activity() {
         }
         val logo = ImageView(this).apply {
             setImageResource(R.drawable.my_measurement_logo)
-            scaleType = ImageView.ScaleType.CENTER_CROP
-            background = rounded(Color.WHITE, 16)
-            clipToOutline = true
-            setPadding(dp(5), dp(5), dp(5), dp(5))
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            background = null
+            clipToOutline = false
+            setPadding(0, 0, 0, 0)
         }
         hero.addView(logo, LinearLayout.LayoutParams(dp(70), dp(70)))
         val brand = LinearLayout(this).apply {
