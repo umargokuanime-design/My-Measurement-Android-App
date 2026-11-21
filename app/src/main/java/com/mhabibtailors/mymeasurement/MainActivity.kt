@@ -150,8 +150,9 @@ class MainActivity : Activity() {
         val role = if (currentRole == "TAILOR") "Tailor" else "Customer"
         val c = root("$role ${if (register) "Registration" else "Login"}",
             if (register) "Create your account to get started" else "Sign in to your account")
-        input(c, "name", "Full Name")
-        if (currentRole == "TAILOR") input(c, "shop", "Shop Name (required)")
+        if (register || currentRole == "CUSTOMER") input(c, "name", "Full Name")
+        if (currentRole == "TAILOR" && register) input(c, "shop", "Shop Name (required)")
+        if (currentRole == "TAILOR" && !register) input(c, "tailorId", "Tailor ID")
         input(c, "password", "Password", true)
         if (register) {
             addButton(c, "Create Account", {
@@ -164,7 +165,7 @@ class MainActivity : Activity() {
                     else {
                         currentUserId = id; currentName = name; currentShop = shop
                         currentTailorId = db.tailorId(id)
-                        toast("Account created successfully")
+                        toast(if (currentRole == "TAILOR") "Account created. Your Tailor ID: $currentTailorId" else "Account created successfully")
                         if (currentRole == "TAILOR") showTailorHome() else showCustomerHome()
                     }
                 }
@@ -173,7 +174,8 @@ class MainActivity : Activity() {
         } else {
             addButton(c, "Login", {
                 val name = value("name"); val pass = value("password")
-                val user = db.login(currentRole, name, pass)
+                val user = if (currentRole == "TAILOR") db.loginTailor(value("tailorId"), pass)
+                    else db.login(currentRole, name, pass)
                 if (user == null) toast("Login failed. Check your name and password.")
                 else {
                     currentUserId = user.id; currentName = user.name; currentShop = user.shop
@@ -424,6 +426,21 @@ private class AppDb(context: Context) : SQLiteOpenHelper(context, "my_measuremen
             val salt = it.getBlob(4); val saved = it.getBlob(5)
             if (!hash(password, salt).contentEquals(saved)) return null
             return UserInfo(it.getLong(0), it.getString(1), it.getString(2), if (it.isNull(3)) "" else it.getString(3))
+        }
+    }
+
+    fun loginTailor(tailorId: String, password: String): UserInfo? {
+        if (tailorId.isBlank()) return null
+        val c = readableDatabase.rawQuery(
+            "SELECT id,name,shop,tailor_id,salt,pass_hash FROM users WHERE role='TAILOR' AND tailor_id=?",
+            arrayOf(tailorId.trim())
+        )
+        c.use {
+            if (!it.moveToFirst()) return null
+            val salt = it.getBlob(4)
+            val saved = it.getBlob(5)
+            if (!hash(password, salt).contentEquals(saved)) return null
+            return UserInfo(it.getLong(0), it.getString(1), it.getString(2), it.getString(3))
         }
     }
 
