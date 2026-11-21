@@ -340,7 +340,7 @@ class MainActivity : Activity() {
 }
 
 private data class UserInfo(val id: Long, val name: String, val shop: String, val tailorId: String)
-private data class MeasurementInfo(val serial: String, val customer: String, val shop: String, val tailorId: String, val orderDate: String, val returnDate: String, val summary: String, val status: String)
+private data class MeasurementInfo(val serial: String, val customer: String, val shop: String, val tailorId: String, val orderDate: String, val returnDate: String, val summary: String, val status: String = "SAVED")
 
 private class AppDb(context: Context) : SQLiteOpenHelper(context, "my_measurement.db", null, 2) {
     override fun onCreate(db: SQLiteDatabase) {
@@ -405,7 +405,7 @@ private class AppDb(context: Context) : SQLiteOpenHelper(context, "my_measuremen
 
     fun measurementCount(userId: Long): Int {
         val c = readableDatabase.rawQuery(
-            "SELECT COUNT(*) FROM measurements WHERE tailor_user_id=?",
+            "SELECT COUNT(*) FROM measurements WHERE tailor_user_id=? AND status='SAVED'",
             arrayOf(userId.toString())
         )
         c.use { return if (it.moveToFirst()) it.getInt(0) else 0 }
