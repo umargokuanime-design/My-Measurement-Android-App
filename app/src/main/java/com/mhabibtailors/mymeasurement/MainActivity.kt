@@ -4,6 +4,10 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.os.Bundle
 import android.graphics.Color
+import android.graphics.Bitmap
+import android.content.Intent
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.qrcode.QRCodeWriter
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
@@ -251,6 +255,7 @@ class MainActivity : Activity() {
         addButton(c, "⌕  Search Measurements", { showSearch() }, false)
         addButton(c, "◉  Profile & Account", { showProfile() }, false)
         addButton(c, "＋  Calculator", { showCalculator() }, false)
+        addButton(c, "▦  QR Identity", { showQrIdentity() }, false)
         addButton(c, "Log Out", { currentUserId = -1; showRoleChoice() }, false)
     }
 
@@ -371,6 +376,45 @@ class MainActivity : Activity() {
         addButton(c, "Back to Dashboard", {
             if (currentRole == "TAILOR") showTailorHome() else showCustomerHome()
         }, false)
+    }
+
+    private fun showQrIdentity() {
+        if (currentRole != "TAILOR" || currentTailorId.isBlank()) {
+            toast("QR identity is available for registered tailor accounts.")
+            return
+        }
+        val payload = "MYMEASURE|1|TAILOR|$currentTailorId|$currentShop"
+        val c = root("QR Identity", "Share your shop identity safely")
+        try {
+            val matrix = QRCodeWriter().encode(payload, BarcodeFormat.QR_CODE, 720, 720)
+            val bitmap = Bitmap.createBitmap(720, 720, Bitmap.Config.ARGB_8888)
+            for (x in 0 until 720) for (y in 0 until 720) {
+                bitmap.setPixel(x, y, if (matrix[x, y]) Color.BLACK else Color.WHITE)
+            }
+            val qr = ImageView(this).apply {
+                setImageBitmap(bitmap)
+                setBackgroundColor(Color.WHITE)
+                setPadding(dp(14), dp(14), dp(14), dp(14))
+                contentDescription = "QR identity for $currentTailorId"
+            }
+            c.addView(qr, LinearLayout.LayoutParams(-1, dp(300)))
+            c.addView(TextView(this).apply {
+                text = "$currentShop\\nTailor ID: $currentTailorId\\n\\nThis QR contains public shop identity only. It is not a login credential."
+                textSize = 15f; setTextColor(INK); gravity = Gravity.CENTER
+                setPadding(dp(10), dp(14), dp(10), dp(14))
+            })
+            addButton(c, "Share QR identity", {
+                val send = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_SUBJECT, "My Measurement — $currentShop")
+                    putExtra(Intent.EXTRA_TEXT, "My Measurement shop identity\\nShop: $currentShop\\nTailor ID: $currentTailorId\\nQR payload: $payload")
+                }
+                startActivity(Intent.createChooser(send, "Share shop identity"))
+            })
+        } catch (e: Exception) {
+            toast("Could not create QR identity: ${e.message}")
+        }
+        addButton(c, "Back to Dashboard", { showTailorHome() }, false)
     }
 
     private fun showProfile() {
