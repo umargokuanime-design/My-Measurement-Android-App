@@ -8,6 +8,13 @@ This branch is the implementation track for the premium tailoring workspace show
 - The interface must be designed for Android phones first and remain responsive on smaller screens.
 - Persistent bottom navigation: Home, Records, Tools, Inbox, Profile.
 
+## Language and localization
+- Provide an in-app language selector in Profile/Settings with exactly two choices: English and Urdu.
+- Persist the selected language across app restarts and apply it to every screen, dialog, button, form label, validation message, notification text, and empty state.
+- Urdu mode must use proper Urdu script, right-to-left layout direction, and right-aligned text where appropriate; English mode must restore left-to-right layout.
+- Changing language must refresh the current screen without losing saved measurements or account data.
+- Do not mix English labels into Urdu mode except user-entered names, shop names, Tailor IDs, serial numbers, and measurement values.
+
 ## Main product areas
 1. **Dashboard** — greeting, shop identity, saved and draft counts, quick actions for New Measurement, QR Identity, Calculator, Messages, recent records.
 2. **Measurement Book** — searchable customer records, Saved/Draft filters, detailed measurement cards, edit/delete, garment type and date.
