@@ -3,6 +3,10 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+dependencies {
+    implementation("com.google.zxing:core:3.5.3")
+}
+
 android {
     namespace = "com.mhabibtailors.mymeasurement"
     compileSdk = 35
