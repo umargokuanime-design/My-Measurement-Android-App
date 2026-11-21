@@ -247,6 +247,7 @@ class MainActivity : Activity() {
         addButton(c, "◷  Draft Measurements", { showMeasurements(true) }, false)
         addButton(c, "⌕  Search Measurements", { showSearch() }, false)
         addButton(c, "◉  Profile & Account", { showProfile() }, false)
+        addButton(c, "＋  Calculator", { showCalculator() }, false)
         addButton(c, "Log Out", { currentUserId = -1; showRoleChoice() }, false)
     }
 
@@ -323,10 +324,50 @@ class MainActivity : Activity() {
                 .setPositiveButton("OK", null).show()
         }, false)
         addButton(c, "Profile", { showProfile() }, false)
+        addButton(c, "Calculator", { showCalculator() }, false)
         addButton(c, "Log Out", { currentUserId = -1; showRoleChoice() }, false)
         c.addView(TextView(this).apply {
             text = "No measurements have been shared with you yet."; textSize = 13f; setTextColor(0xFF64748B.toInt())
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(20) })
+    }
+
+    private fun showCalculator() {
+        clearFields()
+        val c = root("Quick Calculator", "Calculate measurements and tailoring totals")
+        input(c, "numberA", "First number")
+        input(c, "numberB", "Second number")
+        val operation = Spinner(this).apply {
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
+                listOf("Add  (+)", "Subtract  (−)", "Multiply  (×)", "Divide  (÷)"))
+        }
+        c.addView(label("Operation"))
+        c.addView(operation, LinearLayout.LayoutParams(-1, dp(50)))
+        val result = TextView(this).apply {
+            text = "Result will appear here"
+            textSize = 18f; setTextColor(DEEP_BLUE); typeface = Typeface.DEFAULT_BOLD
+            setPadding(dp(15), dp(16), dp(15), dp(16)); background = rounded(Color.WHITE, 16, 0xFFDCE5F1.toInt())
+        }
+        c.addView(result, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+        addButton(c, "Calculate", {
+            val a = value("numberA").toDoubleOrNull()
+            val b = value("numberB").toDoubleOrNull()
+            if (a == null || b == null) {
+                toast("Enter two valid numbers.")
+            } else if (operation.selectedItemPosition == 3 && b == 0.0) {
+                toast("Cannot divide by zero.")
+            } else {
+                val answer = when (operation.selectedItemPosition) {
+                    0 -> a + b
+                    1 -> a - b
+                    2 -> a * b
+                    else -> a / b
+                }
+                result.text = "Result: ${String.format(Locale.US, "%.3f", answer).trimEnd('0').trimEnd('.')}"
+            }
+        })
+        addButton(c, "Back to Dashboard", {
+            if (currentRole == "TAILOR") showTailorHome() else showCustomerHome()
+        }, false)
     }
 
     private fun showProfile() {
