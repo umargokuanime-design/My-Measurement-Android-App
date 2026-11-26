@@ -18,6 +18,8 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.content.ContentValues
 import android.content.Context
 import android.util.TypedValue
+import android.text.TextWatcher
+import android.text.Editable
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import java.security.SecureRandom
