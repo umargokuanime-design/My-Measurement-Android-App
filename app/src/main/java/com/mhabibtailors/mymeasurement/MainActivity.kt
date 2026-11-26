@@ -361,41 +361,35 @@ class MainActivity : Activity() {
 
     private fun showCalculator() {
         clearFields()
-        val c = root("Quick Calculator", "Calculate measurements and tailoring totals")
-        input(c, "numberA", "First number")
-        input(c, "numberB", "Second number")
-        val operation = Spinner(this).apply {
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
-                listOf("Add  (+)", "Subtract  (−)", "Multiply  (×)", "Divide  (÷)"))
-        }
-        c.addView(label("Operation"))
-        c.addView(operation, LinearLayout.LayoutParams(-1, dp(50)))
+        val c = root("Tailoring Calculator", "Estimate fabric and order cost")
+        input(c, "fabric", "Fabric quantity (meters)")
+        input(c, "rate", "Fabric rate per meter (Rs.)")
+        input(c, "stitch", "Stitching charges (Rs.)")
+        input(c, "other", "Other costs (Rs.)")
         val result = TextView(this).apply {
-            text = "Result will appear here"
-            textSize = 18f; setTextColor(DEEP_BLUE); typeface = Typeface.DEFAULT_BOLD
-            setPadding(dp(15), dp(16), dp(15), dp(16)); background = rounded(Color.WHITE, 16, 0xFFDCE5F1.toInt())
+            text = "ESTIMATED TOTAL\nRs. 0"
+            textSize = 23f; setTextColor(Color.WHITE); gravity = Gravity.CENTER
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(dp(16), dp(22), dp(16), dp(22))
+            background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(DEEP_BLUE, BLUE)).apply { cornerRadius = dp(18).toFloat() }
         }
-        c.addView(result, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
-        addButton(c, "Calculate", {
-            val a = value("numberA").toDoubleOrNull()
-            val b = value("numberB").toDoubleOrNull()
-            if (a == null || b == null) {
-                toast("Enter two valid numbers.")
-            } else if (operation.selectedItemPosition == 3 && b == 0.0) {
-                toast("Cannot divide by zero.")
+        c.addView(result, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(16) })
+        addButton(c, "Calculate Total", {
+            val qty = value("fabric").toBigDecimalOrNull()
+            val rate = value("rate").toBigDecimalOrNull()
+            val stitch = (value("stitch").ifBlank { "0" }).toBigDecimalOrNull()
+            val other = (value("other").ifBlank { "0" }).toBigDecimalOrNull()
+            if (qty == null || rate == null || stitch == null || other == null || qty.signum() < 0 || rate.signum() < 0 || stitch.signum() < 0 || other.signum() < 0) {
+                toast("Enter valid non-negative amounts.")
             } else {
-                val answer = when (operation.selectedItemPosition) {
-                    0 -> a + b
-                    1 -> a - b
-                    2 -> a * b
-                    else -> a / b
-                }
-                result.text = "Result: ${BigDecimal.valueOf(answer).stripTrailingZeros().toPlainString()}"
+                val fabricCost = qty.multiply(rate)
+                val total = fabricCost.add(stitch).add(other)
+                result.text = "ESTIMATED TOTAL\nRs. " + total.stripTrailingZeros().toPlainString() +
+                    "\nFabric: Rs. " + fabricCost.stripTrailingZeros().toPlainString()
             }
         })
-        addButton(c, "Back to Dashboard", {
-            if (currentRole == "TAILOR") showTailorHome() else showCustomerHome()
-        }, false)
+        addButton(c, "Reset", { fields.values.forEach { it.setText("") }; result.text = "ESTIMATED TOTAL\nRs. 0" }, false)
+        addButton(c, "Back to Dashboard", { showTailorHome() }, false)
     }
 
     private fun showQrIdentity() {
