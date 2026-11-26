@@ -307,22 +307,46 @@ class MainActivity : Activity() {
     }
 
     private fun showMeasurements(draftsOnly: Boolean = false) {
-        val title = if (draftsOnly) "Draft Measurements" else "Saved Measurements"
-        val c = root(title, currentShop)
-        val records = db.measurementsForTailor(currentUserId, if (draftsOnly) "DRAFT" else "SAVED")
-        if (records.isEmpty()) {
-            c.addView(TextView(this).apply {
-                text = if (draftsOnly) "No drafts yet." else "No saved measurements yet."
-                textSize = 15f; setTextColor(0xFF64748B.toInt()); setPadding(0, dp(12), 0, dp(12))
-            })
-        } else records.forEach { m ->
-            val card = TextView(this).apply {
-                text = "${m.customer}\nSerial: ${m.serial}   •   ${m.status}\nOrder: ${m.orderDate.ifBlank { "—" }}   Return: ${m.returnDate.ifBlank { "—" }}\n${m.summary}"
-                textSize = 14f; setTextColor(INK); setPadding(dp(15), dp(14), dp(15), dp(14))
-                background = rounded(Color.WHITE, 16, 0xFFE0E8F2.toInt())
-            }
-            c.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+        val title = if (draftsOnly) "Draft Measurements" else "Measurement Book"
+        val c = root(title, "Customer profiles & garment records")
+        val search = EditText(this).apply {
+            hint = "⌕  Search customer or serial number"
+            textSize = 14f; setSingleLine(true); setPadding(dp(14), 0, dp(14), 0)
+            background = rounded(Color.WHITE, 22, 0xFFDCE5F1.toInt())
         }
+        c.addView(search, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(12) })
+        val tabs = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        listOf("ALL", "SAVED", "DRAFT").forEach { tab ->
+            val b = button(tab, { showMeasurements(tab == "DRAFT") }, if (tab == "ALL") !draftsOnly else (tab == "DRAFT" && draftsOnly))
+            tabs.addView(b, LinearLayout.LayoutParams(0, dp(42), 1f).apply { rightMargin = dp(4) })
+        }
+        c.addView(tabs)
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        c.addView(list, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        val records = db.measurementsForTailor(currentUserId, if (draftsOnly) "DRAFT" else "SAVED")
+        fun render(query: String) {
+            list.removeAllViews()
+            val matches = records.filter { it.customer.contains(query, true) || it.serial.contains(query, true) }
+            if (matches.isEmpty()) {
+                list.addView(TextView(this).apply { text = "No matching measurement records."; textSize = 14f; setTextColor(0xFF64748B.toInt()); setPadding(dp(8), dp(16), dp(8), dp(16)) })
+            } else matches.forEach { m ->
+                val item = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL; setPadding(dp(15), dp(13), dp(15), dp(13))
+                    background = rounded(Color.WHITE, 16, 0xFFE0E8F2.toInt())
+                    addView(TextView(this@MainActivity).apply { text = m.customer; textSize = 15f; setTextColor(INK); typeface = Typeface.DEFAULT_BOLD })
+                    addView(TextView(this@MainActivity).apply { text = "Serial #${m.serial}   •   ${m.status}"; textSize = 11f; setTextColor(BLUE) })
+                    addView(TextView(this@MainActivity).apply { text = "Order: ${m.orderDate.ifBlank { "—" }}   Delivery: ${m.returnDate.ifBlank { "—" }}"; textSize = 11f; setTextColor(0xFF64748B.toInt()) })
+                }
+                list.addView(item, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+            }
+        }
+        render("")
+        search.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { render(s?.toString().orEmpty()) }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+        addButton(c, "＋  Add New Measurement", { showMeasurementForm() })
         addButton(c, "Back to Dashboard", { showTailorHome() }, false)
     }
 
