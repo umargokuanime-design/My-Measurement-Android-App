@@ -97,7 +97,59 @@ class MainActivity : Activity() {
         hero.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
         col.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(20) })
         scroll.addView(col)
-        setContentView(scroll)
+        val shell = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(0xFFF4F7FC.toInt())
+        }
+        shell.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        if (currentUserId > 0L) {
+            val nav = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                setPadding(dp(5), dp(7), dp(5), dp(7))
+                setBackgroundColor(Color.WHITE)
+                elevation = dp(8).toFloat()
+            }
+            val items = listOf(
+                "⌂" to "Home", "▤" to "Records", "⚒" to "Tools",
+                "●" to "Inbox", "◉" to "Profile"
+            )
+            items.forEach { item ->
+                val active = (title.contains("Dashboard", true) || title.startsWith("Welcome", true) || title.startsWith("Tailor Dashboard", true)) && item.second == "Home" ||
+                    title.contains("Measurement", true) && item.second == "Records" ||
+                    title.contains("Calculator", true) && item.second == "Tools" ||
+                    title.contains("Chat", true) && item.second == "Inbox" ||
+                    title.contains("Profile", true) && item.second == "Profile"
+                val cell = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER
+                    setPadding(dp(2), dp(2), dp(2), dp(2))
+                    setOnClickListener {
+                        when (item.second) {
+                            "Home" -> if (currentRole == "TAILOR") showTailorHome() else showCustomerHome()
+                            "Records" -> if (currentRole == "TAILOR") showMeasurements(false) else showSearch()
+                            "Tools" -> showCalculator()
+                            "Inbox" -> showChat()
+                            "Profile" -> showProfile()
+                        }
+                    }
+                    addView(TextView(this@MainActivity).apply {
+                        text = item.first; textSize = 19f
+                        setTextColor(if (active) BLUE else 0xFF64748B.toInt())
+                        gravity = Gravity.CENTER
+                    })
+                    addView(TextView(this@MainActivity).apply {
+                        text = item.second; textSize = 10f
+                        typeface = if (active) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+                        setTextColor(if (active) BLUE else 0xFF64748B.toInt())
+                        gravity = Gravity.CENTER
+                    })
+                }
+                nav.addView(cell, LinearLayout.LayoutParams(0, dp(48), 1f))
+            }
+            shell.addView(nav, LinearLayout.LayoutParams(-1, -2))
+        }
+        setContentView(shell)
         page = col
         return col
     }
