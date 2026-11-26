@@ -249,17 +249,34 @@ class MainActivity : Activity() {
             text = "QUICK ACTIONS"; textSize = 12f; letterSpacing = 0.12f
             setTextColor(0xFF64748B.toInt()); typeface = Typeface.DEFAULT_BOLD
         }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(3) })
-        addButton(c, "＋  Add New Measurement", { showMeasurementForm() })
-        addButton(c, "⌕  Search Measurements", { showSearch() }, false)
-        addButton(c, "▤  All Measurements", { showMeasurements(false) }, false)
-        addButton(c, "◷  Draft Measurements", { showMeasurements(true) }, false)
-        addButton(c, "⌕  Search Measurements", { showSearch() }, false)
-        addButton(c, "◉  Profile & Account", { showProfile() }, false)
-        addButton(c, "＋  Calculator", { showCalculator() }, false)
-        addButton(c, "▦  QR Identity", { showQrIdentity() }, false)
-        addButton(c, "✉  Chat & Inbox", { showChat() }, false)
-        addButton(c, "🌐  Language / زبان", { showLanguage() }, false)
+        val rowOne = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        addDashboardTile(rowOne, "＋", "New measurement", "Customer records", false) { showMeasurementForm() }
+        addDashboardTile(rowOne, "▦", "QR identity", "Shop QR profile", true) { showQrIdentity() }
+        c.addView(rowOne)
+        val rowTwo = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        addDashboardTile(rowTwo, "▦", "Smart calculator", "Fabric and cost", false) { showCalculator() }
+        addDashboardTile(rowTwo, "●", "Messages", "Chat inbox", true) { showChat() }
+        c.addView(rowTwo)
+        addButton(c, "Measurement Book  •  All Records", { showMeasurements(false) }, false)
+        addButton(c, "Draft Measurements", { showMeasurements(true) }, false)
+        addButton(c, "Search Measurements", { showSearch() }, false)
+        addButton(c, "Business Profile", { showProfile() }, false)
+        addButton(c, "Language: English / اردو", { showLanguage() }, false)
         addButton(c, "Log Out", { currentUserId = -1; showRoleChoice() }, false)
+    }
+
+    private fun addDashboardTile(row: LinearLayout, icon: String, title: String, subtitle: String, gold: Boolean, action: () -> Unit) {
+        val tile = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(13), dp(14), dp(13))
+            background = rounded(if (gold) 0xFFFFE6A0.toInt() else BLUE, 18)
+            elevation = dp(2).toFloat()
+            setOnClickListener { action() }
+            addView(TextView(this@MainActivity).apply { text = icon; textSize = 24f; setTextColor(if (gold) DEEP_BLUE else Color.WHITE) })
+            addView(TextView(this@MainActivity).apply { text = title; textSize = 14f; typeface = Typeface.DEFAULT_BOLD; setTextColor(if (gold) DEEP_BLUE else Color.WHITE) })
+            addView(TextView(this@MainActivity).apply { text = subtitle; textSize = 10f; setTextColor(if (gold) 0xFF66521F.toInt() else 0xFFDCE8FA.toInt()) })
+        }
+        row.addView(tile, LinearLayout.LayoutParams(0, dp(104), 1f).apply { leftMargin = dp(4); rightMargin = dp(4); bottomMargin = dp(8) })
     }
 
     private fun showMeasurementForm() {
